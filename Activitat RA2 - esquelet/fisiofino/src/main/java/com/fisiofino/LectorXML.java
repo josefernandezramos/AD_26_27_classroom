@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -88,25 +90,90 @@ public class LectorXML {
         for (int i = 0; i < atributs.getLength(); i++) {
             Node at = atributs.item(i);
             if (node.getNodeName().equals("telecom")) {
-/* AQUÍ TENIU UN EXEMPLE DE COM EXTREURE INFORMACIÓ D'ATRIBUTS
                  if (at.getTextContent().contains("tel")) {
                     p.setTelefon(at.getTextContent().substring(4));
                 }
                 if (at.getTextContent().contains("mailto")) {
                     p.setMail(at.getTextContent().substring(7));
-                } */
+                }
             }
-            /******************** HAS DE COMPLETAR EL CODI ***************/
+            if (node.getNodeName().equals("id") && at.getNodeName().equals("extension") && p != null && p.getDniNie() == null) {
+                p.setDniNie(at.getTextContent());
+            }
+            if (node.getNodeName().equals("administrativeGenderCode") && at.getNodeName().equals("code") && p != null) {
+                p.setGenere(at.getTextContent());
+            }
+            if (node.getNodeName().equals("birthTime") && at.getNodeName().equals("value") && p != null) {
+                String dataStr = at.getTextContent();
+                if (dataStr.length() == 8 && !dataStr.contains("-")) {
+                    p.setDataNaixement(LocalDate.parse(dataStr, DateTimeFormatter.BASIC_ISO_DATE));
+                } else {
+                    p.setDataNaixement(LocalDate.parse(dataStr.substring(0, 10)));
+                }
+            }
+            if (mp != null) {
+                if ((node.getNodeName().equals("code") || node.getNodeName().equals("value")) && at.getNodeName().equals("code")) {
+                    mp.setSnomedCode(at.getTextContent());
+                }
+                if ((node.getNodeName().equals("code") || node.getNodeName().equals("value")) && at.getNodeName().equals("displayName")) {
+                    mp.setNomMalaltia(at.getTextContent());
+                }
+                if (node.getNodeName().equals("statusCode") && at.getNodeName().equals("code")) {
+                    mp.setStatus(at.getTextContent());
+                }
+            }
         }
  
         // Cas base 2: element fulla (nom, cognoms...) -> mostrem nom i text a la mateixa línia
         if (esFulla(node)) {
-/* AQUÍ TENIU UN EXEMPLE DE COM EXTREURE EL TEXT DELS ELEMENTS
-             if (node.getNodeName().equals("given")) {
-                p.setNom(node.getTextContent());
-            } */
+            if (mp != null) {
+                if (node.getNodeName().equals("snomedCode") || node.getNodeName().equals("code")) {
+                    if (mp.getSnomedCode() == null) mp.setSnomedCode(node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("nameDisease") || node.getNodeName().equals("name")) {
+                    if (mp.getNomMalaltia() == null) mp.setNomMalaltia(node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("status")) {
+                    mp.setStatus(node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("treatment") || node.getNodeName().equals("text")) {
+                    mp.setTractament(node.getTextContent().trim());
+                }
+            } else if (p != null) {
+                if (node.getNodeName().equals("given")) {
+                    p.setNom(node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("family")) {
+                    p.setCognoms(node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("nif") || node.getNodeName().equals("dni")) {
+                    p.setDniNie(node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("birthDate")) {
+                    String dataStr = node.getTextContent().trim();
+                    if (dataStr.length() == 8 && !dataStr.contains("-")) {
+                        p.setDataNaixement(LocalDate.parse(dataStr, DateTimeFormatter.BASIC_ISO_DATE));
+                    } else {
+                        p.setDataNaixement(LocalDate.parse(dataStr.substring(0, 10)));
+                    }
+                }
+                if (node.getNodeName().equals("gender")) {
+                    p.setGenere(node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("streetAddressLine") || node.getNodeName().equals("address")) {
+                    p.setAdreca(node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("city")) {
+                    p.setCiutat(node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("postalCode")) {
+                    p.setCodiPostal(node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("country")) {
+                    p.setPais(node.getTextContent().trim());
+                }
+            }
             return;
-        /****************** HAS DE COMPLETAR EL CODI ********************/
         }
 
         // Element pare significa que creem un nou pacient
@@ -116,9 +183,7 @@ public class LectorXML {
 
         if (node.getNodeName().equals("problem")) {
             mp = new MalaltiaPacient();
-
-           /* DESCOMENTEU SI HO COMENTEU NECESSARI, dependrà de la vostra implementació  
-           mp.setDniPacient(p.getDniNie());  */  // la informació del pacient <recordTarget> apareix abans dels <problem>
+            mp.setDniPacient(p.getDniNie());  // la informació del pacient <recordTarget> apareix abans dels <problem>
         }
 
         // Cas recursiu: explorem els fills un nivell més avall
