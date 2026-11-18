@@ -112,14 +112,16 @@ public class LectorXML {
                 }
             }
             if (mp != null) {
-                if ((node.getNodeName().equals("code") || node.getNodeName().equals("value")) && at.getNodeName().equals("code")) {
+                if (node.getNodeName().equals("code") && at.getNodeName().equals("code")) {
                     mp.setSnomedCode(at.getTextContent());
                 }
-                if ((node.getNodeName().equals("code") || node.getNodeName().equals("value")) && at.getNodeName().equals("displayName")) {
-                    mp.setNomMalaltia(at.getTextContent());
+                if (node.getNodeName().equals("dose") && at.getNodeName().equals("value")) {
+                    String actual = mp.getTractament() != null ? mp.getTractament() : "";
+                    mp.setTractament((actual + " " + at.getTextContent()).trim());
                 }
-                if (node.getNodeName().equals("statusCode") && at.getNodeName().equals("code")) {
-                    mp.setStatus(at.getTextContent());
+                if (node.getNodeName().equals("dose") && at.getNodeName().equals("unit")) {
+                    String actual = mp.getTractament() != null ? mp.getTractament() : "";
+                    mp.setTractament((actual + " " + at.getTextContent()).trim());
                 }
             }
         }
@@ -127,17 +129,19 @@ public class LectorXML {
         // Cas base 2: element fulla (nom, cognoms...) -> mostrem nom i text a la mateixa línia
         if (esFulla(node)) {
             if (mp != null) {
-                if (node.getNodeName().equals("snomedCode") || node.getNodeName().equals("code")) {
-                    if (mp.getSnomedCode() == null) mp.setSnomedCode(node.getTextContent().trim());
-                }
-                if (node.getNodeName().equals("nameDisease") || node.getNodeName().equals("name")) {
-                    if (mp.getNomMalaltia() == null) mp.setNomMalaltia(node.getTextContent().trim());
+                if (node.getNodeName().equals("code")) {
+                    mp.setNomMalaltia(node.getTextContent().trim());
                 }
                 if (node.getNodeName().equals("status")) {
                     mp.setStatus(node.getTextContent().trim());
                 }
-                if (node.getNodeName().equals("treatment") || node.getNodeName().equals("text")) {
-                    mp.setTractament(node.getTextContent().trim());
+                if (node.getNodeName().equals("medication")) {
+                    String actual = mp.getTractament() != null ? mp.getTractament() + " | " : "";
+                    mp.setTractament(actual + node.getTextContent().trim());
+                }
+                if (node.getNodeName().equals("frequency")) {
+                    String actual = mp.getTractament() != null ? mp.getTractament() : "";
+                    mp.setTractament((actual + " (" + node.getTextContent().trim() + ")").trim());
                 }
             } else if (p != null) {
                 if (node.getNodeName().equals("given")) {
