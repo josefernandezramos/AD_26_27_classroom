@@ -1,6 +1,5 @@
 package com.fisiofino.database;
 
-
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -18,6 +17,12 @@ public class GestioPacients {
     public int CreatePatient(Pacient p) throws SQLException {
 
         int idPacient = 0;
+
+        Pacient existent = findBydniNie(p.getDniNie());
+        if (existent != null) {
+            return existent.getIdPacient();
+        }
+
         String sql = "INSERT INTO Patient (given_name, family_name, nif, birth_date, gender, address, city, postal_code, country, telephone, email) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -45,14 +50,13 @@ public class GestioPacients {
                 }
             }
         }
-        
+
         return idPacient;
     }
 
     public boolean CreateMalaltia(MalaltiaPacient mp) throws SQLException {
 
         boolean malaltiaCreada = false;
-
         String sql = "INSERT INTO Disease (snomed_code, name_disease) VALUES (?, ?)";
 
         try (Connection con = Connexio.getConnection();
@@ -72,7 +76,6 @@ public class GestioPacients {
     public boolean CreateMalaltiaPacient(MalaltiaPacient mp) throws SQLException {
 
         boolean malaltiaPacientCreada = false;
-
         String sql = "INSERT INTO Patient_disease (id_patient, snomed_code, status, treatment) VALUES (?, ?, ?, ?)";
 
         try (Connection con = Connexio.getConnection();
@@ -95,7 +98,6 @@ public class GestioPacients {
     public Pacient findBydniNie(String dni_nie) throws SQLException {
             
         Pacient p = null;
-
         String sql = "SELECT * FROM Patient WHERE nif = ?";
 
         try (Connection con = Connexio.getConnection();
@@ -125,13 +127,12 @@ public class GestioPacients {
             }
         }
 
-        return  p;
+        return p;
     }
 
 //Apartat 3: Malalties del pacient
     public List<MalaltiaPacient> findDiseaseBydniNie(String dni_nie) throws SQLException {
         List<MalaltiaPacient> malaltiespacient = new ArrayList<MalaltiaPacient>();
-
         String sql = "SELECT pd.id_diagnosis, pd.id_patient, p.nif, pd.snomed_code, d.name_disease, pd.status, pd.treatment " +
                      "FROM Patient_disease pd " +
                      "JOIN Patient p ON pd.id_patient = p.id_patient " +
@@ -156,7 +157,7 @@ public class GestioPacients {
                     malaltiespacient.add(mp);
                 }
             }
-        }    
+        }
 
         return malaltiespacient;
     }
@@ -164,7 +165,6 @@ public class GestioPacients {
 //Apartat 4: Llistar tots els pacients
     public List<Pacient> findAllPacients () throws SQLException {
         List<Pacient> pacients = new ArrayList<>();
-
         String sql = "SELECT * FROM Patient ORDER BY id_patient";
 
         try (Connection con = Connexio.getConnection();
@@ -198,7 +198,6 @@ public class GestioPacients {
 //Apartat 5: Modificar l'estat d'una malaltia d'un pacient
     public boolean updateStatus (int idPacient, String snomedCode, String status) throws SQLException {
         boolean modificat = false;
-
         String sql = "UPDATE Patient_disease SET status = ? WHERE id_patient = ? AND snomed_code = ?";
 
         try (Connection con = Connexio.getConnection();
@@ -213,13 +212,12 @@ public class GestioPacients {
             }
         }
 
-        return  modificat;
+        return modificat;
     }
 
 // funcions i mètodes accesoris i necessaris per saber si s'ha d'insertar o modificar    
     public boolean findMalaltia (String SnomedCode) throws SQLException {
         boolean esMalaltia = false;
-        
         String sql = "SELECT 1 FROM Disease WHERE snomed_code = ?";
 
         try (Connection con = Connexio.getConnection();
@@ -239,7 +237,6 @@ public class GestioPacients {
 
     public boolean findMalaltiaPacient (String dniPacient, String SnomedCode, String status) throws SQLException {
         boolean esMalaltiaPacient = false;
-
         String sql = "SELECT 1 FROM Patient_disease pd " +
                      "JOIN Patient p ON pd.id_patient = p.id_patient " +
                      "WHERE p.nif = ? AND pd.snomed_code = ? AND pd.status = ?";
@@ -257,9 +254,8 @@ public class GestioPacients {
                 }
             }
         }
-        
+
         return esMalaltiaPacient;
     }
-
-
 }
+

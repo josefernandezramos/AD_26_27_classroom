@@ -1,8 +1,6 @@
 package com.fisiofino.controlador;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
@@ -17,7 +15,6 @@ public class Controller {
 
     private final MenuView vista;
     private final GestioPacients gestiopacients;
-    private final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
     public Controller(MenuView vista, GestioPacients gestiopacients) {
         this.vista = vista;
@@ -35,23 +32,26 @@ public class Controller {
                 if (opcio == null) break;
 
                 switch (opcio.toUpperCase()) {
-                    case "1": /************** Crida als mètodes que fan la carregarXml(); ************/
+                    case "1":
                         carregarXml();
                         break;
-                    case "2": /************** consultarInfoPersonal(); *******************************/ 
+                    case "2":
                         consultarInfoPersonal();
                         break;
-                    case "3": /************** consultarInfoMedica(); *********************************/   
+                    case "3":
                         consultarInfoMedica();
                         break;
-                    case "4": /************** consultarTots(); ***************************************/         
-                        consultarTots(); 
+                    case "4":
+                        consultarTots();
                         break;
-                    case "5": /************** modificarEstat(); **************************************/        
+                    case "5":
                         modificarEstat();
                         break;
-                    case "X": sortir = true;                break;
-                    default:  vista.mostraError("Opció no vàlida");
+                    case "X":
+                        sortir = true;
+                        break;
+                    default:
+                        vista.mostraError("Opció no vàlida");
                 }
             } catch (IOException e) {
                 vista.mostraError("Error de lectura: " + e.getMessage());
@@ -86,7 +86,7 @@ public class Controller {
             }
 
             Pacient pBd = gestiopacients.findBydniNie(mp.getDniPacient());
-            if (pBd != null && !gestiopacients.findMalaltiaPacient(mp.getDniPacient(), mp.getSnomedCode(), mp.getStatus())) {
+            if (pBd != null && !gestiopacients.findMalaltiaPacient(mp.getDniPacient(), mp.getSnomedCode(), "Activo")) {
                 mp.setIdPacient(pBd.getIdPacient());
                 if (gestiopacients.CreateMalaltiaPacient(mp)) {
                     malaltiesInserides++;
@@ -98,35 +98,32 @@ public class Controller {
     }
 
     private void consultarInfoPersonal() throws IOException, SQLException {
-        System.out.print("Introdueix el DNI/NIE del pacient: ");
-        String dni = reader.readLine();
-        Pacient p = gestiopacients.findBydniNie(dni);
+        String dni = vista.demana("Introdueix el DNI/NIE del pacient: ");
+        if (!esDniNieValid(dni)) {
+            vista.mostraError("El format del DNI/NIE no és vàlid.");
+            return;
+        }
 
+        Pacient p = gestiopacients.findBydniNie(dni.toUpperCase());
         if (p != null) {
-            vista.mostraMissatge(p.toString());
+            vista.mostraPacient(p);
         } else {
             vista.mostraError("No s'ha trobat cap pacient amb el DNI/NIE: " + dni);
         }
     }
 
     private void consultarInfoMedica() throws IOException, SQLException {
-        System.out.print("Introdueix el DNI/NIE del pacient: ");
-        String dni = reader.readLine();
-        Pacient p = gestiopacients.findBydniNie(dni);
-
-        if (p == null) {
-            vista.mostraError("No s'ha trobat cap pacient amb el DNI/NIE: " + dni);
+        String dni = vista.demana("Introdueix el DNI/NIE del pacient: ");
+        if (!esDniNieValid(dni)) {
+            vista.mostraError("El format del DNI/NIE no és vàlid.");
             return;
         }
 
-        List<MalaltiaPacient> malalties = gestiopacients.findDiseaseBydniNie(dni);
+        List<MalaltiaPacient> malalties = gestiopacients.findDiseaseBydniNie(dni.toUpperCase());
         if (malalties.isEmpty()) {
-            vista.mostraMissatge("El pacient " + p.getNom() + " " + p.getCognoms() + " no té malalties registrades.");
+            vista.mostraMissatge("No s'han trobat malalties registrades per al DNI/NIE: " + dni);
         } else {
-            vista.mostraMissatge("Malalties de " + p.getNom() + " " + p.getCognoms() + ":");
-            for (MalaltiaPacient mp : malalties) {
-                vista.mostraMissatge(" - " + mp.toString());
-            }
+            vista.mostraMalaltiesPacient(malalties);
         }
     }
 
@@ -135,33 +132,41 @@ public class Controller {
         if (pacients.isEmpty()) {
             vista.mostraMissatge("No hi ha pacients registrats a la base de dades.");
         } else {
-            for (Pacient p : pacients) {
-                vista.mostraMissatge(p.toString());
-            }
+            vista.mostraPacients(pacients);
         }
     }
 
     private void modificarEstat() throws IOException, SQLException {
-        System.out.print("Introdueix el DNI/NIE del pacient: ");
-        String dni = reader.readLine();
-        Pacient p = gestiopacients.findBydniNie(dni);
+        String dni = vista.demana("Introdueix el DNI/NIE del pacient: ");
+        if (!esDniNieValid(dni)) {
+            vista.mostraError("El format del DNI/NIE no és vàlid.");
+            return;
+        }
 
+        Pacient p = gestiopacients.findBydniNie(dni.toUpperCase());
         if (p == null) {
             vista.mostraError("No s'ha trobat cap pacient amb el DNI/NIE: " + dni);
             return;
         }
 
-        System.out.print("Introdueix el codi SNOMED de la malaltia: ");
-        String snomed = reader.readLine();
-        System.out.print("Introdueix el nou estat de la malaltia: ");
-        String nouEstat = reader.readLine();
+        String snomed = vista.demana("Introdueix el codi SNOMED de la malaltia: ");
+        String nouEstat = vista.demana("Introdueix el nou estat de la malaltia: ");
+
+        if (snomed == null || snomed.isBlank() || nouEstat == null || nouEstat.isBlank()) {
+            vista.mostraError("El codi SNOMED i l'estat no poden estar buits.");
+            return;
+        }
 
         boolean actualitzat = gestiopacients.updateStatus(p.getIdPacient(), snomed, nouEstat);
         if (actualitzat) {
             vista.mostraMissatge("Estat actualitzat correctament.");
         } else {
-            vista.mostraError("No s'ha pogut actualitzar. Verifica que el pacient tingui assignat el codi SNOMED indicat.");
+            vista.mostraError("No s'ha pogut actualitzar. Comprova que el pacient tingui aquesta malaltia assignada.");
         }
     }
 
+    private boolean esDniNieValid(String dni) {
+        if (dni == null) return false;
+        return dni.toUpperCase().matches("^([0-9]{8}[A-Z]|[XYZ][0-9]{7}[A-Z])$");
+    }
 }
