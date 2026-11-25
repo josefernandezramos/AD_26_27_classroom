@@ -5,6 +5,10 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
 import com.fisiofino.LectorXML;
 import com.fisiofino.database.GestioPacients;
 import com.fisiofino.model.MalaltiaPacient;
@@ -64,39 +68,54 @@ public class Controller {
         vista.mostraMissatge("Fins aviat!");
     }
 
-    private void carregarXml() throws Exception {
+    private void carregarXml() {
         Path rutaXml = Path.of("pacientes_bluebutton.xml");
-        List<Pacient> pacients = LectorXML.llegirPacients(rutaXml);
-        List<MalaltiaPacient> malalties = LectorXML.llegirMalalties(rutaXml);
 
-        int pacientsInserits = 0;
-        for (Pacient p : pacients) {
-            if (p.getDniNie() != null && gestiopacients.findBydniNie(p.getDniNie()) == null) {
-                gestiopacients.CreatePatient(p);
-                pacientsInserits++;
-            }
-        }
-
-        int malaltiesInserides = 0;
-        for (MalaltiaPacient mp : malalties) {
-            if (mp.getSnomedCode() == null) continue;
-
-            if (!gestiopacients.findMalaltia(mp.getSnomedCode())) {
-                gestiopacients.CreateMalaltia(mp);
-            }
-
-            Pacient pBd = gestiopacients.findBydniNie(mp.getDniPacient());
-            if (pBd != null && !gestiopacients.findMalaltiaPacient(mp.getDniPacient(), mp.getSnomedCode(), "Activo")) {
-                mp.setIdPacient(pBd.getIdPacient());
-                if (gestiopacients.CreateMalaltiaPacient(mp)) {
-                    malaltiesInserides++;
+        try {
+            // 1. Pacients y sus comprobaciones/inserciones
+            List<Pacient> pacients = LectorXML.llegirPacients(rutaXml);
+            int pacientsInserits = 0;
+            for (Pacient p : pacients) {
+                if (p.getDniNie() != null && gestiopacients.findBydniNie(p.getDniNie()) == null) {
+                    gestiopacients.CreatePatient(p);
+                    pacientsInserits++;
                 }
             }
-        }
 
-        vista.mostraMissatge("Càrrega completada: " + pacientsInserits + " pacients nous i " + malaltiesInserides + " diagnòstics inserits.");
+            // 2. Malalties y sus comprobaciones/inserciones
+            List<MalaltiaPacient> malalties = LectorXML.llegirMalalties(rutaXml);
+            int malaltiesInserides = 0;
+            for (MalaltiaPacient mp : malalties) {
+                if (mp.getSnomedCode() == null) continue;
+
+                if (!gestiopacients.findMalaltia(mp.getSnomedCode())) {
+                    gestiopacients.CreateMalaltia(mp);
+                }
+
+                Pacient pBd = gestiopacients.findBydniNie(mp.getDniPacient());
+                if (pBd != null && !gestiopacients.findMalaltiaPacient(mp.getDniPacient(), mp.getSnomedCode(), "Activo")) {
+                    mp.setIdPacient(pBd.getIdPacient());
+                    if (gestiopacients.CreateMalaltiaPacient(mp)) {
+                        malaltiesInserides++;
+                    }
+                }
+            }
+
+            vista.mostraMissatge("Càrrega completada: " + pacientsInserits + " pacients nous i " + malaltiesInserides + " diagnòstics inserits.");
+
+        } catch (IOException ioe) {
+            System.out.println("Error d'entrada/sortida amb l'arxiu XML: " + ioe.getMessage());
+        } catch (ParserConfigurationException pce) {
+            System.out.println("Error de configuració del parser XML: " + pce.getMessage());
+        } catch (SAXException sa) {
+            System.out.println("Error de format en l'arxiu XML: " + sa.getMessage());
+        } catch (Exception e) {
+            System.out.println("Error inesperat: " + e.getMessage());
+        }
     }
 
+
+//=============================================================================================00000
     private void consultarInfoPersonal() throws IOException, SQLException {
         String dni = vista.demana("Introdueix el DNI/NIE del pacient: ");
         if (!esDniNieValid(dni)) {

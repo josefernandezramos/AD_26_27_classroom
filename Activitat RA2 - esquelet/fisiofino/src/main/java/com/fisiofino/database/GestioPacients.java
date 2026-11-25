@@ -60,7 +60,7 @@ public class GestioPacients {
         String sql = "INSERT INTO Disease (snomed_code, name_disease) VALUES (?, ?)";
 
         try (Connection con = Connexio.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+             PreparedStatement ps = con.prepareStatement(sql, new String[] { "id"})) {
 
             ps.setString(1, mp.getSnomedCode());
             ps.setString(2, mp.getNomMalaltia());
