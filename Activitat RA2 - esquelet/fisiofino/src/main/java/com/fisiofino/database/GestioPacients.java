@@ -76,18 +76,20 @@ public class GestioPacients {
     public boolean CreateMalaltiaPacient(MalaltiaPacient mp) throws SQLException {
 
         boolean malaltiaPacientCreada = false;
-        String sql = "INSERT INTO Patient_disease (id_patient, snomed_code, status, treatment) VALUES (?, ?, ?, ?)";
+        if(!findMalaltia(mp.getSnomedCode())){
+            String sql = "INSERT INTO Patient_disease (id_patient, snomed_code, status, treatment) VALUES (?, ?, ?, ?)";
 
-        try (Connection con = Connexio.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+            try (Connection con = Connexio.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setInt(1, mp.getIdPacient());
-            ps.setString(2, mp.getSnomedCode());
-            ps.setString(3, mp.getStatus());
-            ps.setString(4, mp.getTractament());
+                ps.setInt(1, mp.getIdPacient());
+                ps.setString(2, mp.getSnomedCode());
+                ps.setString(3, mp.getStatus());
+                ps.setString(4, mp.getTractament());
 
-            if (ps.executeUpdate() > 0) {
-                malaltiaPacientCreada = true;
+                if (ps.executeUpdate() > 0) {
+                    malaltiaPacientCreada = true;
+                }
             }
         }
         
